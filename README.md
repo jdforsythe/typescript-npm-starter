@@ -127,6 +127,8 @@ A useful trick is to switch the decorator on your spec from `@test` to `@test.on
 
 The dev dependencies `sinon` and `@types/sinon` are included for stubbing purposes in the tests. This is for example purposes only and if you're testing pure functions and have no need for stubs, you can safely remove those dependencies from `package.json`.
 
+For more information on testing, read the documentation for [mocha-typescript](https://www.npmjs.com/package/mocha-typescript) and [sinon](https://sinonjs.org/).
+
 ## Building your module
 
 When you are ready to compile your module, you can run the build task in two ways:
@@ -155,7 +157,7 @@ There is another script called `build-with-audit` which also runs a `yarn audit`
 
 ## Continuous Integration
 
-CircleCI is a free (for open-source projects) continuous integration platform. If you authorize CircleCI to talk to your Github repo, you can have every pull request (and merge into `master`) kick off a workflow on CircleCI that will run your tests, lint, and build process to ensure that everything works before you merge the PR into `master`.
+[CircleCI](https://circleci.com/) is a free (for open-source projects) continuous integration platform. If you authorize CircleCI to talk to your Github repo, you can have every pull request (and merge into `master`) kick off a workflow on CircleCI that will run your tests, lint, and build process to ensure that everything works before you merge the PR into `master`.
 
 Simply sign up for an account at CircleCI and go through their instructions for authorizing CircleCI to talk to your GitHub account. Then when you are in CircleCI, click "Add Projects" on the left. Beside your repository name, click the "Set Up Project" button. Choose "Linux" and "Node" and then click the "Start Building" button. If you get asked for authorization, go ahead and authorize CircleCI to add a webhook to your GitHub repository. You should see a workflow that will fail (it will be red) if you haven't pushed the CircleCI config file yet.
 
