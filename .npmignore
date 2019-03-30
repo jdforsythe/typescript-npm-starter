@@ -1,0 +1,12 @@
+!lib
+.nyc_output
+.vscode
+coverage
+examples
+src
+circle.yml
+mocha.opts
+README.md
+tsconfig.json
+tslint.json
+yarn.lock

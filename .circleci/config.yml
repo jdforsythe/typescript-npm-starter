@@ -1,0 +1,188 @@
+version: 2
+
+defaults: &defaults
+  working_directory: ~/repo
+  docker:
+    - image: circleci/node:10.14.2
+
+whitelist: &whitelist
+  paths:
+    - coverage/*
+    - lib/*
+    - node_modules/*
+    - src/*
+    - .gitignore
+    - .npmignore
+    - mocha.opts
+    - yarn.lock
+    - package.json
+    - README.md
+    - tsconfig.json
+    - tslint.json
+
+jobs:
+  checkout:
+    <<: *defaults
+
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+          - v1-dependencies-{{ checksum "package.json" }}
+          - v1-dependencies-
+
+      - run:
+          name: Install Dependencies
+          command: yarn install
+
+      - save_cache:
+          paths:
+            - node_modules
+          key: v1-dependencies-{{ checksum "package.json" }}
+
+      - persist_to_workspace:
+          root: ~/repo
+          <<: *whitelist
+
+  lint:
+    <<: *defaults
+
+    steps:
+      - attach_workspace:
+          at: ~/repo
+
+      - run:
+          name: Lint TypeScript code
+          command: yarn run lint
+
+  test:
+    <<: *defaults
+
+    steps:
+      - attach_workspace:
+          at: ~/repo
+
+      - run:
+          name: Test TypeScript code
+          command: yarn run test
+
+      - persist_to_workspace:
+          root: ~/repo
+          <<: *whitelist
+
+  dependencycheck:
+    <<: *defaults
+
+    steps:
+      - attach_workspace:
+          at: ~/repo
+
+      - run:
+          name: Check Dependency Vulnerabilities
+          command: yarn audit --production
+
+  build:
+    <<: *defaults
+
+    steps:
+      - attach_workspace:
+          at: ~/repo
+
+      - run:
+          name: Build TypeScript code
+          command: yarn run compile
+
+      - persist_to_workspace:
+          root: ~/repo
+          <<: *whitelist
+
+  deploy:
+    <<: *defaults
+
+    steps:
+      - attach_workspace:
+          at: ~/repo
+
+      - run:
+          name: Transfer NPM token from CircleCI Context env to ~/.npmrc
+          command: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
+
+      - run:
+          name: Publish to NPM
+          command: npm publish --loglevel silly
+
+workflows:
+  version: 2
+
+  build:
+    jobs:
+      - checkout:
+          context: npmtoken
+      - test:
+          requires:
+            - checkout
+      - lint:
+          requires:
+            - checkout
+      - dependencycheck:
+          requires:
+            - checkout
+      - build:
+          requires:
+            - dependencycheck
+            - test
+            - lint
+
+  release:
+    jobs:
+      - checkout:
+          context: npmtoken
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*/
+            branches:
+              ignore: /.*/
+      - test:
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*/
+            branches:
+              ignore: /.*/
+          requires:
+            - checkout
+      - lint:
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*/
+            branches:
+              ignore: /.*/
+          requires:
+            - checkout
+      - dependencycheck:
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*/
+            branches:
+              ignore: /.*/
+          requires:
+            - checkout
+      - build:
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*/
+            branches:
+              ignore: /.*/
+          requires:
+            - dependencycheck
+            - test
+            - lint
+      - deploy:
+          context: npmtoken
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*/
+            branches:
+              ignore: /.*/
+          requires:
+            - build
